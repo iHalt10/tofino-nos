@@ -1,0 +1,12 @@
+[Unit]
+Description=bf_kdrv Module
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe bf_kdrv intr_mode="msi"
+ExecStop=/sbin/rmmod bf_kdrv
+
+[Install]
+WantedBy=multi-user.target

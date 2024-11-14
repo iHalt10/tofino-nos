@@ -1,0 +1,11 @@
+# Usage:
+# Supported gitignore are "Python", "Visual Studio Code", and "My Project".
+# For MacOS, Vim, Emamcs, and others, please use "~/.config/git/ignore".
+
+### Vagrant
+.vagrant/
+
+### My Project
+build/
+p4studio/*
+!p4studio/sde-release

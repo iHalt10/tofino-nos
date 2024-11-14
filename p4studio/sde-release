@@ -1,0 +1,4 @@
+SDE_BASE=/opt/p4studio
+SDE_VERSION=bf-sde-9.11.2
+SDE=${SDE_BASE}/${SDE_VERSION}
+SDE_INSTALL=${SDE}/install

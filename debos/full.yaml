@@ -1,0 +1,123 @@
+{{- $work_dir := .work_dir -}}
+{{- $kernel_version := .kernel_version -}}
+
+architecture: amd64
+
+actions:
+  - action: debootstrap
+    suite: bullseye
+    components:
+      - main
+    mirror: https://deb.debian.org/debian
+    variant: minbase
+
+  - action: apt
+    description: Install Kernel Image ({{ $kernel_version }})
+    packages:
+      - linux-image-{{ $kernel_version }}
+
+  - action: apt
+    description: Install some packages
+    packages:
+      - sudo
+      - adduser
+      - systemd-sysv
+      - initramfs-tools
+      - grub-efi-amd64
+      - efibootmgr
+      - openssh-server
+      - openssh-client
+      - isc-dhcp-client
+      - iproute2
+      - ethtool
+      - dnsutils
+      - iputils-ping
+      - wget
+      - curl
+      - rsync
+      - locales
+      - ca-certificates
+      - dbus
+      - xz-utils
+      - less
+      - file
+      - vim
+
+  - action: apt
+    description: Install required packages for p4studio
+    packages:
+      - build-essential
+      - cmake
+      - libjudy-dev
+      - libcurl3-gnutls
+
+  - action: run
+    description: Enable systemd-networkd
+    chroot: true
+    command: systemctl enable systemd-networkd
+
+  - action: run
+    description: Enable systemd-resolved
+    chroot: true
+    command: |
+      systemctl enable systemd-resolved
+      ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+  - action: run
+    description: Add user (admin)
+    chroot: true
+    command: |
+      echo "admin ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/admin
+      adduser --gecos admin --disabled-password admin
+      echo "admin:passward" | chpasswd
+      adduser admin sudo
+
+  - action: run
+    description: Add hostname (tofino)
+    chroot: true
+    command: echo tofino > /etc/hostname
+
+  - action: run
+    description: Add /etc/hosts
+    chroot: true
+    command: |
+      echo "127.0.0.1 localhost" > /etc/hosts
+      echo "127.0.1.1 tofino" >> /etc/hosts
+      echo "" >> /etc/hosts
+      echo "::1     ip6-localhost ip6-loopback" >> /etc/hosts
+      echo "fe00::0 ip6-localnet" >> /etc/hosts
+      echo "ff00::0 ip6-mcastprefix" >> /etc/hosts
+      echo "ff02::1 ip6-allnodes" >> /etc/hosts
+      echo "ff02::2 ip6-allrouters" >> /etc/hosts
+
+  - action: run
+    description: Add .bashrc for p4studio (root & admin)
+    command: |
+      . {{ $work_dir }}/installer/sde-release
+      echo ". ${SDE_BASE}/sde-release" >> ${ROOTDIR}/home/admin/.bashrc
+      echo 'export SDE' >> ${ROOTDIR}/home/admin/.bashrc
+      echo 'export SDE_INSTALL' >> ${ROOTDIR}/home/admin/.bashrc
+      echo 'export LD_LIBRARY_PATH="${SDE_INSTALL}/lib"' >> ${ROOTDIR}/home/admin/.bashrc
+      echo 'export PATH="${SDE_INSTALL}/bin:${PATH}"' >> ${ROOTDIR}/home/admin/.bashrc
+      echo ". ${SDE_BASE}/sde-release" >> ${ROOTDIR}/root/.bashrc
+      echo 'export SDE' >> ${ROOTDIR}/root/.bashrc
+      echo 'export SDE_INSTALL' >> ${ROOTDIR}/root/.bashrc
+      echo 'export LD_LIBRARY_PATH="${SDE_INSTALL}/lib"' >> ${ROOTDIR}/root/.bashrc
+      echo 'export PATH="${SDE_INSTALL}/bin:${PATH}"' >> ${ROOTDIR}/root/.bashrc
+
+  - action: run
+    description: Add /tmp to /etc/fstab
+    chroot: true
+    command: echo "tmpfs /tmp tmpfs defaults 0 0" > /etc/fstab
+
+  - action: run
+    description: Copy nos-release
+    command: cp {{ $work_dir }}/installer/nos-release ${ROOTDIR}/etc/
+
+  - action: run
+    description: Calculate rootfs size
+    command: du -s -B 1 "${ROOTDIR}" | awk '{print $1}' | tee {{ $work_dir }}/installer/rootfs-size
+
+  - action: pack
+    file: rootfs.tar.xz
+    compression: xz

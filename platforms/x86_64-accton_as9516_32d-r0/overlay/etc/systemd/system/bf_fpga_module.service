@@ -1,0 +1,12 @@
+[Unit]
+Description=bf_fpga Module
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe bf_fpga intr_mode="none"
+ExecStop=/sbin/rmmod bf_fpga
+
+[Install]
+WantedBy=multi-user.target

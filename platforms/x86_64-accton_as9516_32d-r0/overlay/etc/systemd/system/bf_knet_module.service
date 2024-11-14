@@ -1,0 +1,12 @@
+[Unit]
+Description=bf_knet Module
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe bf_knet intr_mode="none"
+ExecStop=/sbin/rmmod bf_knet
+
+[Install]
+WantedBy=multi-user.target
